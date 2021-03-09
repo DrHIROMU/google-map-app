@@ -1,9 +1,19 @@
 import React, { Component, useState } from "react";
-import { Key } from "./key"; 
+import { Key } from "./key";
 import GoogleMapReact from "google-map-react";
 
 // 我的位置
 const MyPositionMarker = ({ text }) => <div>{text}</div>;
+
+// Cafe Marker
+const CafeMarker = ({id, icon, text }) => (
+  <div key="{id}" >
+    <img style={{ height: '30px', width: '30px' }} src={icon} />
+    <div>{text}</div>
+  </div>
+)
+
+
 
 const SimpleMap = (props) => {
   // 預設位置
@@ -12,19 +22,21 @@ const SimpleMap = (props) => {
     lng: 121.50
   })
 
+  const [places, setPlaces] = useState([]);
+
   const [mapApi, setMapApi] = useState(null)
   const [mapApiLoaded, setMapApiLoaded] = useState(false)
-  const [mapInstance, setMapInstance] = useState(null)  
+  const [mapInstance, setMapInstance] = useState(null)
 
   // 當地圖載入完成，將地圖實體與地圖 API 傳入 state 供之後使用
-  const apiHasLoaded = (map, maps) => {    
+  const apiHasLoaded = (map, maps) => {
     setMapApi(maps)
     setMapApiLoaded(true)
     setMapInstance(map)
   };
 
   const handleCenterChange = () => {
-    if(mapApiLoaded) {
+    if (mapApiLoaded) {
       setMyPosition({
         // center.lat() 與 center.lng() 會回傳正中心的經緯度
         lat: mapInstance.center.lat(),
@@ -33,11 +45,35 @@ const SimpleMap = (props) => {
     }
   }
 
+  // 找咖啡廳
+  const findCafeLocation = () => {
+    if (mapApiLoaded) {
+      const service = new mapApi.places.PlacesService(mapInstance)
+
+      const request = {
+        location: myPosition,
+        radius: 1000,
+        type: ['cafe']
+      };
+
+      service.nearbySearch(request, (results, status) => {
+        if (status === mapApi.places.PlacesServiceStatus.OK) {
+          console.log(results)
+          setPlaces(results) // 修改 State
+        }
+      })
+    }
+  }
+
   return (
     // Important! Always set the container height explicitly
     <div style={{ height: '100vh', width: '100%' }}>
+      <input type="button" value="找咖啡廳" onClick={findCafeLocation} />
       <GoogleMapReact
-        bootstrapURLKeys={{ key: Key }}
+        bootstrapURLKeys={{
+          key: Key,
+          libraries:['places'] // 要在這邊放入我們要使用的 API
+        }}
         onBoundsChange={handleCenterChange}
         defaultCenter={props.center}
         defaultZoom={props.zoom}
@@ -49,6 +85,17 @@ const SimpleMap = (props) => {
           lng={myPosition.lng}
           text="My Position"
         />
+        {places.map(item=>(
+          <CafeMarker
+            id={item.place_id}
+            icon={item.icon}
+            key={item.id}
+            lat={item.geometry.location.lat()}
+            lng={item.geometry.location.lng()}
+            text={item.name}
+            placeId={item.place_id}
+          />
+        ))}
       </GoogleMapReact>
     </div>
   );
