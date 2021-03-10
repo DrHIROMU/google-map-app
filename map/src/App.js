@@ -1,4 +1,4 @@
-import React, { Component, useState } from "react";
+import React, { Component, useState, useEffect } from "react";
 import { Key } from "./key";
 import GoogleMapReact from "google-map-react";
 
@@ -76,6 +76,10 @@ const SimpleMap = (props) => {
       })
     }
   }
+
+  useEffect(() => {
+    findLocation()
+  },[mapApiLoaded, searchType, myPosition])
 
   return (
     // Important! Always set the container height explicitly
