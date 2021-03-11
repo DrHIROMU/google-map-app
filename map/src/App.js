@@ -1,4 +1,5 @@
-import React, { Component, useState, useEffect } from "react";
+import React, { Component, useState, useEffect, useRef } from "react";
+import { debounce } from 'lodash'
 import { Key } from "./key";
 import GoogleMapReact from "google-map-react";
 
@@ -31,6 +32,12 @@ const SimpleMap = (props) => {
   const [searchType, setSearchType] = useState('cafe')
 
   const [mapType, setMapType] = useState('roadmap')
+
+  // 建立參考點
+  let inputRef = useRef(null);
+
+  // 建立 state
+  const [inputText, setInputText] = useState('')
 
   // 改變地圖樣式
   const handleMapTypeId = e => {
@@ -79,7 +86,33 @@ const SimpleMap = (props) => {
 
   useEffect(() => {
     findLocation()
-  },[mapApiLoaded, searchType, myPosition])
+  }, [mapApiLoaded, searchType, myPosition])
+
+  // 自動完成
+  const handleAutocomplete = () => {
+    if (mapApiLoaded) {
+      const service = new mapApi.places.AutocompleteService()
+      const request = {
+        input: inputText // input 為 inputText
+      }
+
+      service.getPlacePredictions(request, (results, status) => {
+        if(status === mapApi.places.PlacesServiceStatus.OK) {
+          console.log(results)
+        }
+      });
+    }
+  }
+
+  // 當 inputText 改變時，執行自動完成
+  useEffect(() => {
+    handleAutocomplete()
+  }, [inputText])
+
+  // 更改 state
+  const handleInput = () => {
+    setInputText(inputRef.current.value)
+  }
 
   return (
     // Important! Always set the container height explicitly
@@ -88,8 +121,9 @@ const SimpleMap = (props) => {
       <input type="button" value="找餐廳" onClick={handleSearchType} name="restaurant" />
       <input type="button" value="找牙醫" onClick={handleSearchType} name="dentist" />
       <input type="button" value="找咖啡廳" onClick={handleSearchType} name="cafe" />
-      <input type="button" value="衛星" onClick={ handleMapTypeId } name="hybrid" />
-      <input type="button" value="路線" onClick={ handleMapTypeId } name="roadmap" />
+      <input type="button" value="衛星" onClick={handleMapTypeId} name="hybrid" />
+      <input type="button" value="路線" onClick={handleMapTypeId} name="roadmap" />
+      自動完成: <input ref={inputRef} type="text" onChange={ debounce(handleInput, 500) } />
       <GoogleMapReact
         bootstrapURLKeys={{
           key: Key,
